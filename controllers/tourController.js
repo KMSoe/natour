@@ -1,5 +1,7 @@
 const Tour = require('../models/tourModel');
 const APIFeatures = require('../utils/apiFeatures');
+const AppError = require('../utils/appError');
+const catchAsync = require('../utils/catchAsync');
 
 exports.aliasTopTours = (req, res, next) => {
   req.query.limit = 5;
@@ -9,68 +11,50 @@ exports.aliasTopTours = (req, res, next) => {
   next();
 };
 
-exports.getAllTours = async (req, res) => {
-  try {
-    // EXECUTE QUERY
-    const features = new APIFeatures(Tour.find(), req.query)
-      .filter()
-      .sort()
-      .limitFields()
-      .paginate();
-    const tours = await features.query;
+exports.getAllTours = catchAsync(async (req, res) => {
+  // EXECUTE QUERY
+  const features = new APIFeatures(Tour.find(), req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate();
+  const tours = await features.query;
 
-    // Send Response
-    return res.status(200).json({
-      status: true,
-      results: tours.length,
-      data: {
-        tours,
-      },
-    });
-  } catch (error) {
-    return res.status(400).json({
-      status: false,
-      message: 'Error',
-    });
+  // Send Response
+  return res.status(200).json({
+    status: true,
+    results: tours.length,
+    data: {
+      tours,
+    },
+  });
+});
+
+exports.getTour = catchAsync(async (req, res, next) => {
+  const tour = await Tour.findById(req.params.id);
+
+  if (!tour) {
+    return  next(new AppError(404, `Tiur Not found!!`));
   }
-};
 
-exports.getTour = async (req, res) => {
-  try {
-    const tour = await Tour.findById(req.params.id);
+  return res.status(200).json({
+    status: true,
+    data: {
+      tour,
+    },
+  });
+});
 
-    return res.status(200).json({
-      status: true,
-      data: {
-        tour,
-      },
-    });
-  } catch (error) {
-    return res.status(404).json({
-      status: false,
-      message: 'Not Found!!',
-    });
-  }
-};
+exports.createNewTour = catchAsync(async (req, res, next) => {
+  const newTour = await Tour.create(req.body);
 
-exports.createNewTour = async (req, res) => {
-  try {
-    const newTour = await Tour.create(req.body);
-
-    return res.status(201).json({
-      status: true,
-      data: {
-        tour: newTour,
-      },
-    });
-  } catch (error) {
-    return res.status(400).json({
-      status: false,
-      message: 'Invalid Data Sent!!',
-      error,
-    });
-  }
-};
+  return res.status(201).json({
+    status: true,
+    data: {
+      tour: newTour,
+    },
+  });
+});
 
 exports.updateTour = async (req, res) => {
   try {
