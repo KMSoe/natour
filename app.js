@@ -20,6 +20,8 @@ mongoose
 
 const tourRouter = require('./routes/tourRoutes');
 const userRouter = require('./routes/userRoutes');
+const AppError = require('./utils/appError');
+const errHandleMiddleware = require('./controllers/ErrController');
 
 const app = express();
 app.use(express.json());
@@ -35,26 +37,9 @@ app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/users', userRouter);
 
 app.all('*', (req, res, next) => {
-  // return res.status(404).json({
-  //   status: false,
-  //   message: `Can't find ${req.originalUrl} on the server!!`,
-  // });
-
-  const err = new Error(`Can't find ${req.originalUrl} on the server!!`);
-  err.status = false;
-  err.statusCode = 404;
-
-  next(err);
+  next(new AppError(404, `Can't find ${req.originalUrl} on the server!!`));
 });
 
-app.use((err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.status = err.status || false;
-
-  return res.status(err.statusCode).json({
-    status: err.status,
-    message: err.message,
-  });
-});
+app.use(errHandleMiddleware);
 
 module.exports = app;
