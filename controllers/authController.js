@@ -18,3 +18,40 @@ exports.signup = catchAsync(async(req, res, next) => {
         }
     })
 })
+
+exports.signin = catchAsync(async(req, res, next) => {
+    // Check email & password provided
+
+    // Check user exists with email
+
+    // Check password correct or not
+
+    return res.status(200).json({
+        status: true,
+        token,
+        data: {
+            user,
+        }
+    })
+})
+
+exports.protect = catchAsync(async(req, res, next) => {
+    let token;
+
+    // 1. Getting token and check if it's there
+    if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        token = req.headers.authorization.split(' ')[1];
+    }
+
+    if(!token) {
+        return next(new AppError(401, 'You\'re not logged in! Please login'));
+    }
+
+    // 2. Verificaton token
+
+    // 3. Check if user still exists
+
+    // 4. Check if user changed password after the token issued
+
+    next()
+})
