@@ -6,13 +6,13 @@ const router = express.Router();
 
 router.get('/tour-stats', tourController.getTourStats);
 
-router.get('/top-5-tours', tourController.aliasTopTours ,tourController.getAllTours);
+router.get('/top-5-tours', authController.protect, tourController.aliasTopTours ,tourController.getAllTours);
 router.route('/').get(authController.protect, tourController.getAllTours).post(tourController.createNewTour);
 
 router
   .route('/:id')
-  .get(tourController.getTour)
-  .patch(tourController.updateTour)
-  .delete(authController.restrictTo('admin', 'lead-guide'), tourController.deleteTour);
+  .get(authController.protect, tourController.getTour)
+  .patch(authController.protect, tourController.updateTour)
+  .delete(authController.protect, authController.restrictTo('admin', 'lead-guide'), tourController.deleteTour);
 
 module.exports = router;
