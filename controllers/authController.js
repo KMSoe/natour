@@ -1,8 +1,26 @@
 const jwt = require('jsonwebtoken');
-const { promisify} = require('util');
+const { promisify } = require('util');
 const User = require('../models/userModel');
 const AppError = require('../utils/appError');
 const catchAsync = require('../utils/catchAsync');
+
+const signToken = (id) => {
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN,
+  });
+};
+
+const createSendToken = (user, statusCode, res) => {
+  const token = signToken(user._id);
+
+  return res.status(statusCode).json({
+    status: 'success',
+    token,
+    data: {
+      user,
+    },
+  });
+};
 
 exports.signup = catchAsync(async (req, res, next) => {
   const user = await User.create(req.body);
@@ -11,29 +29,26 @@ exports.signup = catchAsync(async (req, res, next) => {
     expiresIn: process.env.JWT_EXPIRES_IN,
   });
 
-  return res.status(201).json({
-    status: true,
-    token,
-    data: {
-      user,
-    },
-  });
+  return createSendToken(user, 201, res);
 });
 
 exports.signin = catchAsync(async (req, res, next) => {
-  // Check email & password provided
+  const { email, password } = req.body;
 
-  // Check user exists with email
+  // 1. Check email & password provided
+  if (!email || !password) {
+    return next(new AppError(400, 'Please provide email and password!'));
+  }
 
-  // Check password correct or not
+  // 2. Check user exists with email
+  const user = await User.findOne({ email }).select('+password');
 
-  return res.status(200).json({
-    status: true,
-    token,
-    data: {
-      user,
-    },
-  });
+  // 3. Check password correct or not
+  if (!user || !(await user.correctPassword(password, user.password))) {
+    return next(new AppError(401, 'Incorrect email or password'));
+  }
+
+  createSendToken(user, 200, res);
 });
 
 exports.protect = catchAsync(async (req, res, next) => {
@@ -56,13 +71,19 @@ exports.protect = catchAsync(async (req, res, next) => {
 
   // 3. Check if user still exists
   const currentUser = await User.findById(decoded.id);
-  if(!currentUser) {
-    return (new AppError(401, 'The user belonging to this token does no longer exist.'));
+  if (!currentUser) {
+    return new AppError(
+      401,
+      'The user belonging to this token does no longer exist.'
+    );
   }
 
   // 4. Check if user changed password after the token issued
-  if(currentUser.changedPasswordAfter(decoded.iat)) {
-    return (new AppError(401, 'User recently changed password! Please log in again.'));
+  if (currentUser.changedPasswordAfter(decoded.iat)) {
+    return new AppError(
+      401,
+      'User recently changed password! Please log in again.'
+    );
   }
 
   req.user = currentUser;
