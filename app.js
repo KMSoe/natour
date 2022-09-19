@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 
 dotenv.config({ path: './config.env' });
 
@@ -27,10 +28,18 @@ const app = express();
 app.use(express.json());
 app.use(morgan('dev'));
 
+// Global Middlewares
 app.use((req, res, next) => {
   req.request_at = new Date().toISOString();
   next();
 });
+
+const limiter = rateLimit({
+  max: 100,
+  windowMs: 1000 * 60 * 60,
+  message: 'Too many request from this IP, please try again in an hour'
+});
+app.use('/api', limiter);
 
 // Routes
 app.use('/api/v1/tours', tourRouter);
