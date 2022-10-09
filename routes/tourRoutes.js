@@ -1,9 +1,12 @@
 const express = require('express');
+const reviewRoutes = require('./reviewRoutes');
 const authController = require('../controllers/authController');
 const tourController = require('../controllers/tourController');
+const reviewController = require('../controllers/reviewController');
 
 const router = express.Router();
 
+router.use('/:tourId/reviews', reviewRoutes);
 router.get('/tour-stats', tourController.getTourStats);
 
 router.get('/top-5-tours', authController.protect, tourController.aliasTopTours ,tourController.getAllTours);

@@ -6,52 +6,54 @@ const catchAsync = require('../utils/catchAsync');
 
 
 exports.getAllReviews = catchAsync(async (req, res) => {
-  // EXECUTE QUERY
-  const features = new APIFeatures(Review.find(), req.query)
-    .filter()
-    .sort()
-    .limitFields()
-    .paginate();
-  const reviews = await features.query;
+    let filter = {};
 
-  // Send Response
-  return res.status(200).json({
-    status: true,
-    results: reviews.length,
-    data: {
-      reviews,
-    },
-  });
+    if (req.params.tourId) filter = { tour: req.params.tourId };
+
+    const reviews = await Review.find(filter);
+
+    // Send Response
+    return res.status(200).json({
+        status: true,
+        results: reviews.length,
+        data: {
+            reviews,
+        },
+    });
 });
 
 exports.getReview = catchAsync(async (req, res, next) => {
     const review = await Tour.findById(req.params.id).populate({
         path: "user",
         select: "name"
-      }).populate({
+    }).populate({
         path: "tour",
         select: "name"
-      });
-    
-      if (!review) {
-        return  next(new AppError(404, `Review Not found!!`));
-      }
-    
-      return res.status(200).json({
+    });
+
+    if (!review) {
+        return next(new AppError(404, `Review Not found!!`));
+    }
+
+    return res.status(200).json({
         status: true,
         data: {
-          review,
+            review,
         },
-      });
+    });
 });
 
 exports.createNewReview = catchAsync(async (req, res, next) => {
-  const newReview = await Review.create(req.body);
+    // Allow nested routes
+    if (!req.body.tour) req.body.tour = req.params.tourId;
+    if (!req.body.user) req.body.tour = req.user.id;
 
-  return res.status(201).json({
-    status: true,
-    data: {
-      review: newReview,
-    },
-  });
+    const newReview = await Review.create(req.body);
+
+    return res.status(201).json({
+        status: true,
+        data: {
+            review: newReview,
+        },
+    });
 });
