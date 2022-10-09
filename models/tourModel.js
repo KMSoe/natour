@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const slugify = require('slugify');
+const User = require('./userModel');
 
 const tourSchema = new mongoose.Schema(
   {
@@ -96,6 +97,12 @@ const tourSchema = new mongoose.Schema(
         description: String,
         day: Number
       }
+    ],
+    guides: [
+      {
+        type: mongoose.Schema.ObjectId,
+        ref: 'User'
+      }
     ]
   },
   {
@@ -107,6 +114,12 @@ const tourSchema = new mongoose.Schema(
 tourSchema.virtual('durationWeeks').get(function () {
   return this.duration / 7;
 });
+
+// tourSchema.pre('save', function (next) {
+//   const guidePromises = this.guides.map(async id => await User.findById(id));
+//   this.guides = Promise.all(guidePromises);
+//   next();
+// });
 
 tourSchema.pre('save', function (next) {
   this.slug = slugify(this.name, { lower: true });
